@@ -44,6 +44,7 @@ This is a Bash script for monitoring system performance, including disk usage, C
 
 ## Example Output
 
+![System Monitoring](Script-Output.png)
 
 
   
