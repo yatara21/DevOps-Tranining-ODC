@@ -1,65 +1,71 @@
 #!/bin/bash
 
-{
-tput setaf 2
-echo "System Monitoring Report - $(date +"%Y-%m-%d %H:%M:%S")"
-tput sgr0
-echo "======================================================="
+# Constants
+LOG_DIR="/home/vagrant/my-logs"
+CPU_THRESHOLD=85
+TO_EMAIL="your-email-example@gmail.com"
 
-DiskUsage=$(sudo df -h)
-tput setaf 2
-echo "Disk Usage:"
-tput sgr0
-echo "======================================================="
-echo "$DiskUsage"
-
-echo "======================================================="
-
-CpuUsage=$(sudo top -bn1 | grep "Cpu(s)" | awk '{print $2 + $4}')
-tput setaf 2
-echo "CPU Usage: $CpuUsage%"
-tput sgr0
-if (( $(echo "$CpuUsage > 85" | bc -l) )); then
-    # Set terminal text color to red
-    tput setaf 1
-    echo "Warning! The CPU Usage is above 85%!"
-    tput sgr0
-    # Email configuration
-    SUBJECT="High CPU Usage Alert!"
-    TO_EMAIL="arabnada771@gmail.com"
-    MESSAGE="Warning! The CPU usage on the system has exceeded 85%. Current usage is: $CpuUsage%."
-
-    # Prepare and send the email
-    {
-        echo "To: $TO_EMAIL"
-        echo "Subject: $SUBJECT"
-        echo "Content-Type: text/plain; charset=UTF-8"
-        echo ""
-        echo "$MESSAGE"
-    } | /usr/sbin/sendmail -t
-
-    echo "Alert email sent to $TO_EMAIL."
-
-    # Reset terminal text color
-
+# Ensure the log directory exists
+if [ ! -d "$LOG_DIR" ]; then
+    mkdir -p "$LOG_DIR"
 fi
 
-echo "======================================================="
+# Functions for colored output
+print_green() {
+    tput setaf 2
+    echo "$1"
+    tput sgr0
+}
 
+print_red() {
+    tput setaf 1
+    echo "$1"
+    tput sgr0
+}
 
-MemoryUsage=$(sudo free -h)
-tput setaf 2
-echo "Memory Usage:"
-tput sgr0
-echo "======================================================="
-echo "$MemoryUsage"
+# Log file setup
+LOG_FILE="$LOG_DIR/system_report_$(date +"%Y%m%d_%H%M%S").log"
 
-echo "======================================================="
+{
+    # Header
+    print_green "System Monitoring Report - $(date +"%Y-%m-%d %H:%M:%S")"
+    echo "======================================================="
 
-TopFiveMempry=$(sudo ps -Ao pid,user,comm,%mem --sort=-%mem | head -6)
-tput setaf 2
-echo "Top 5 Memory-Consuming Processes:"
-tput sgr0
-echo "======================================================="
-echo "$TopFiveMempry"
-} | tee "/home/vagrant/my-logs/test_$(date +"%Y%m%d_%H%M%S").log"
+    # Disk Usage
+    disk_usage=$(df -h)
+    print_green "Disk Usage:"
+    echo "======================================================="
+    echo "$disk_usage"
+    echo "======================================================="
+
+    # CPU Usage
+    cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2 + $4}')
+    print_green "CPU Usage: $cpu_usage%"
+    if (( $(echo "$cpu_usage > $CPU_THRESHOLD" | bc -l) )); then
+        print_red "Warning! CPU usage is above $CPU_THRESHOLD%!"
+        
+        # Send alert email
+        subject="High CPU Usage Alert!"
+        message="Warning! The CPU usage on $(hostname) has exceeded $CPU_THRESHOLD%. Current usage is: $cpu_usage%."
+
+        echo -e "To: $TO_EMAIL\nSubject: $subject\n\n$message" | sendmail -t
+        echo "Alert email sent to $TO_EMAIL."
+    fi
+    echo "======================================================="
+
+    # Memory Usage
+    memory_usage=$(free -h)
+    print_green "Memory Usage:"
+    echo "======================================================="
+    echo "$memory_usage"
+    echo "======================================================="
+
+    # Top 5 Memory-Consuming Processes
+    top_memory_processes=$(ps -Ao pid,user,comm,%mem --sort=-%mem | head -6)
+    print_green "Top 5 Memory-Consuming Processes:"
+    echo "======================================================="
+    echo "$top_memory_processes"
+    echo "======================================================="
+
+} | tee "$LOG_FILE"
+#enhanced version of the script from GPT
