@@ -68,4 +68,6 @@ LOG_FILE="$LOG_DIR/system_report_$(date +"%Y%m%d_%H%M%S").log"
     echo "======================================================="
 
 } | tee "$LOG_FILE"
-#enhanced version of the script from GPT
+#DevOps Internship Orangre DC
+#Task One
+#Status: accomplished
